@@ -1,8 +1,9 @@
 def eliminate_words(words, guess):
-    for i in range(4):
+    for i in range(5):
         char, status = guess[i]
+        print(guess[i])
         if status == "0":
-            words = [word for word in words if word[i] != char]
+            words = [word for word in words if char not in word]
         if status == "1":
             words = [word for word in words if (word[i] != char and char in word)]
         if status == "2":
