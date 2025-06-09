@@ -1,5 +1,7 @@
 import itertools
 import math
+import os
+import json
 
 
 def generate_result_combinations():
@@ -26,11 +28,15 @@ def get_word_expected_value(words, word):
     return total_bits
 
 
-def get_word_bits_list(words):
+def get_word_bits_list(words, verbose=False):
     word_bits_list = {}
     for word in words:
         word_bits_list[word] = get_word_expected_value(words, word)
-        print(f"{word}:{word_bits_list[word]}")
+        if verbose:
+            print(f"{word}:{word_bits_list[word]}")
+    word_bits_list = sorted(
+        word_bits_list.items(), key=lambda item: item[1], reverse=True
+    )
     return word_bits_list
 
 
@@ -56,22 +62,33 @@ def generate_guess(word, result):
 def process_word_list(filename):
     file = open(filename, "r")
     content = file.read()
+    file.close()
     return str.splitlines(content)
+
+
+def get_initial_word_bits_list(words):
+    if os.path.exists("word_bits_list.txt"):
+        word_bits_list = json.load(open("word_bits_list.txt"))
+    else:
+        print("word_bits_list.txt not found, generating file")
+        word_bits_list = get_word_bits_list(words, True)
+        json.dump(word_bits_list, open("word_bits_list.txt", "w"))
+    return word_bits_list
 
 
 if __name__ == "__main__":
     RESULT_COMBINATIONS = generate_result_combinations()
     possible_words = process_word_list("allowed_words.txt")
-    user_word = ""
-    while user_word != "exit":
-        word_bits_list = get_word_bits_list(possible_words)
-        sorted_word_bits_list = sorted(
-            word_bits_list.items(), key=lambda item: item[1], reverse=True
-        )
-        suggestions = list(sorted_word_bits_list)[:5]
+    word_bits_list = get_initial_word_bits_list(possible_words)
+    while True:
+        suggestions = list(word_bits_list)[:5]
         print(f"suggested words:\n {suggestions}")
         user_word = input("Enter your guess:\n")
         guess_result = input("Enter the result of your guess: 0 = ⬛ 1 = 🟨, 2 = 🟩\n")
+        if guess_result == "22222":
+            print("you won! thanks for using wordle suggester")
+            break
         guess = generate_guess(user_word, guess_result)
         possible_words = eliminate_words(possible_words, guess)
-        print(possible_words)
+        print("remaining possibilities: " + str(len(possible_words)))
+        word_bits_list = get_word_bits_list(possible_words)
